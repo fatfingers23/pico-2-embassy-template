@@ -1,16 +1,29 @@
 #![no_std]
 #![no_main]
 
-use defmt::*;
+use defmt::info;
 use embassy_executor::Spawner;
-use embassy_rp::gpio;
+use embassy_futures::join::join;
+use embassy_rp::peripherals::USB;
+use embassy_rp::usb::{Driver, Instance, InterruptHandler};
+use embassy_rp::{bind_interrupts, gpio};
 use embassy_rp::{block::ImageDef, uart};
 use embassy_time::Timer;
+use embassy_usb::class::cdc_acm::{CdcAcmClass, State};
+use embassy_usb::driver::EndpointError;
+use embassy_usb::{Builder, Config};
 use gpio::{Level, Output};
 use static_cell::StaticCell;
 use {defmt_rtt as _, panic_probe as _};
 
-// static SERIAL: StaticCell<hal::uart::Uart0> = StaticCell::new();
+bind_interrupts!(struct Irqs {
+    USBCTRL_IRQ => InterruptHandler<USB>;
+});
+
+#[embassy_executor::task]
+async fn logger_task(driver: Driver<'static, USB>) {
+    embassy_usb_logger::run!(1024, log::LevelFilter::Info, driver);
+}
 
 #[link_section = ".start_block"]
 #[used]
@@ -30,31 +43,17 @@ pub static PICOTOOL_ENTRIES: [embassy_rp::binary_info::EntryAddr; 4] = [
 ];
 
 #[embassy_executor::main]
-async fn main(_spawner: Spawner) {
-    info!("led on!");
-
+async fn main(spawner: Spawner) {
     let p = embassy_rp::init(Default::default());
     let mut led = Output::new(p.PIN_25, Level::Low);
-    let config = uart::Config::default();
-    let mut uart = uart::Uart::new_blocking(p.UART0, p.PIN_0, p.PIN_1, config);
-
-    static SERIAL: StaticCell<
-        embassy_rp::uart::Uart<'_, embassy_rp::peripherals::UART0, uart::Blocking>,
-    > = StaticCell::new();
-    // defmt_serial::defmt_serial(SERIAL.init(uart));
-    // defmt_serial::defmt_serial(SERIAL.init(serial));
-    // led.set_low();
-    info!("led on!");
-
+    let driver = Driver::new(p.USB, Irqs);
+    spawner.must_spawn(logger_task(driver));
     loop {
-        uart.blocking_write("hello there new!\r\n".as_bytes())
-            .unwrap();
-
-        info!("led on!");
+        log::error!("Hello, world!");
+        info!("Hello, world!");
         led.set_high();
         Timer::after_millis(1000).await;
 
-        info!("led off!");
         led.set_low();
         Timer::after_millis(1000).await;
     }
