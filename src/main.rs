@@ -3,17 +3,12 @@
 
 use defmt::info;
 use embassy_executor::Spawner;
-use embassy_futures::join::join;
+use embassy_rp::block::ImageDef;
 use embassy_rp::peripherals::USB;
-use embassy_rp::usb::{Driver, Instance, InterruptHandler};
+use embassy_rp::usb::{Driver, InterruptHandler};
 use embassy_rp::{bind_interrupts, gpio};
-use embassy_rp::{block::ImageDef, uart};
 use embassy_time::Timer;
-use embassy_usb::class::cdc_acm::{CdcAcmClass, State};
-use embassy_usb::driver::EndpointError;
-use embassy_usb::{Builder, Config};
 use gpio::{Level, Output};
-use static_cell::StaticCell;
 use {defmt_rtt as _, panic_probe as _};
 
 bind_interrupts!(struct Irqs {
@@ -49,8 +44,7 @@ async fn main(spawner: Spawner) {
     let driver = Driver::new(p.USB, Irqs);
     spawner.must_spawn(logger_task(driver));
     loop {
-        log::error!("Hello, world!");
-        info!("Hello, world!");
+        log::info!("You there");
         led.set_high();
         Timer::after_millis(1000).await;
 
