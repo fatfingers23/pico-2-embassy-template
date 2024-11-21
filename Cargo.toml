@@ -102,7 +102,6 @@ embedded-sdmmc = "0.7.0"
 
 bt-hci = { version = "0.1.0", default-features = false, features = ["defmt"] }
 trouble-host = { version = "0.1.0", features = ["defmt", "gatt"] }
-defmt-serial = "0.10.0"
 
 [profile.release]
 debug = 2
