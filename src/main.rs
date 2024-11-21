@@ -1,7 +1,6 @@
 #![no_std]
 #![no_main]
 
-use defmt::info;
 use embassy_executor::Spawner;
 use embassy_rp::block::ImageDef;
 use embassy_rp::peripherals::USB;
@@ -40,14 +39,19 @@ pub static PICOTOOL_ENTRIES: [embassy_rp::binary_info::EntryAddr; 4] = [
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
     let p = embassy_rp::init(Default::default());
-    let mut led = Output::new(p.PIN_25, Level::Low);
     let driver = Driver::new(p.USB, Irqs);
     spawner.must_spawn(logger_task(driver));
+    //Gives a pause for the host to connect to the serial port and start viewing logs
+    Timer::after_millis(2000).await;
+    log::info!("Blinky example started");
+
+    let mut led = Output::new(p.PIN_25, Level::Low);
     loop {
-        log::info!("You there");
+        log::info!("LED ON");
         led.set_high();
         Timer::after_millis(1000).await;
 
+        log::info!("LED OFF");
         led.set_low();
         Timer::after_millis(1000).await;
     }
