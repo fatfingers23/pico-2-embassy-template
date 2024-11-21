@@ -19,6 +19,10 @@ I am working on Pop!_OS so what these instructions are geared towards
 
 # Running
 Ideally once all that is done you should just be able to do `cargo run` and it handles the reset.
+
+**Note: I have found that at least on my laptop if I plug in the probe first before the Pico i'm flashing that nothing is sent over serial. So may see the same thing. It's a bit like they're both fighting over /dev/ttyACM0. If I switch to using UART for logging i'll update this repo
+
+
 1. Cargo run builds the firmware
 2. The runner passes the name and runs `just flash` via [config.toml](./.cargo/config.toml)
 3. Just takes and uses pico-sdk's openocd to flash via the SWD ports then resets the pico to by pass a breakpoint that hits every time you flash
